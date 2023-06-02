@@ -1,5 +1,6 @@
 package io.github.pablichj.exercisejp.domain
 
+import io.github.pablichj.exercisejp.data.CityWeatherInfo
 import io.github.pablichj.exercisejp.data.OpenWeatherApi
 import javax.inject.Inject
 

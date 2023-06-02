@@ -1,4 +1,4 @@
-package io.github.pablichj.exercisejp.domain
+package io.github.pablichj.exercisejp.data
 
 import com.google.gson.annotations.SerializedName
 

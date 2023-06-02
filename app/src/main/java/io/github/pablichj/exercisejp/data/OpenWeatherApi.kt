@@ -1,6 +1,5 @@
 package io.github.pablichj.exercisejp.data
 
-import io.github.pablichj.exercisejp.domain.CityWeatherInfo
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Query

@@ -8,6 +8,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.pablichj.exercisejp.ui.SearchPage
 import io.github.pablichj.exercisejp.ui.SearchPageViewModel
@@ -28,9 +30,17 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    val searchPageViewModel = hiltViewModel<SearchPageViewModel>()
-                    SearchPage(viewModel = searchPageViewModel)
+                    val navController = rememberNavController()
+                    NavHost(
+                        navController = navController,
+                        startDestination = MainGraph.route,
+                    ) {
+                        mainGraph(navController)
+                    }
+
                 }
+
+
             }
         }
     }
