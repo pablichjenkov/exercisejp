@@ -23,7 +23,6 @@ import io.github.pablichj.exercisejp.domain.GetCityWeatherInput
 import io.github.pablichj.exercisejp.domain.GetCityWeatherUseCase
 import io.github.pablichj.exercisejp.domain.UseCaseResult
 import io.github.pablichj.exercisejp.util.DispatcherProvider
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -167,7 +166,7 @@ class SearchPageViewModel @Inject constructor(
     }
 
     private fun presentCurrentLocationWeather(context: Context) {
-        viewModelScope.launch(Dispatchers.Main) {
+        viewModelScope.launch(dispatcherProvider.main) {
             updateWeatherSectionState(WeatherSectionState.Loading)
             val location = getLocation(context)
             if (location != null) {

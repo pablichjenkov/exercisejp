@@ -12,6 +12,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import io.github.pablichj.exercisejp.ui.theme.ExerciseJPTheme
 
@@ -55,6 +56,7 @@ internal fun SearchPageContent(
         Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .testTag("SearchPageContentRootNode")
     ) {
         CityWeatherSearchForm(
             modifier,
