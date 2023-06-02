@@ -9,6 +9,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,14 +27,16 @@ internal fun SearchPage(
         viewModel.locationPermissionResult(context, isGranted)
     }
 
+    val pageState = remember { viewModel.searchPageState }
+
     SearchPageContent(
         modifier = modifier,
-        pageState = viewModel.searchPageState.value,
+        pageState = pageState.value,
         onSubmitClick = {
             viewModel.doCityGeocodeRequest(it)
         }
     )
-    if (viewModel.searchPageState.value.shouldAskLocationPermission) {
+    if (pageState.value.shouldAskLocationPermission) {
         permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         viewModel.clearShouldAskLocationPermission()
     }
@@ -58,7 +61,10 @@ internal fun SearchPageContent(
             pageState.searchFormState,
             onSubmitClick
         )
-        CityWeatherView(pageState.weatherSectionState, pageState.searchFormState.units.readerValue)
+        CityWeatherInfoView(
+            pageState.weatherSectionState,
+            pageState.searchFormState.units.readerValue
+        )
     }
 }
 

@@ -1,5 +1,6 @@
 package io.github.pablichj.exercisejp.ui
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -34,9 +35,9 @@ internal fun CityWeatherSearchForm(
     searchFormState: SearchFormState,
     onSubmitClick: (CityWeatherRequest) -> Unit
 ) {
-    var cityName: String by remember { mutableStateOf(searchFormState.citySearched) }
-    var stateCode: String by remember { mutableStateOf(searchFormState.stateSearched) }
-    var selectedIndex by remember { mutableStateOf(searchFormState.selectedIndex) }
+    var cityName: String by remember(searchFormState) { mutableStateOf(searchFormState.citySearched) }
+    var stateCode: String by remember(searchFormState) { mutableStateOf(searchFormState.stateSearched) }
+    var selectedIndex by remember(searchFormState) { mutableStateOf(searchFormState.selectedIndex) }
     var expanded by remember { mutableStateOf(false) }
     val units = remember { Units.values().toList() }
 

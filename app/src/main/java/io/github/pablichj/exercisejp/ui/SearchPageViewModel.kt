@@ -3,6 +3,7 @@ package io.github.pablichj.exercisejp.ui
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Location
 import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
@@ -13,6 +14,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.pablichj.exercisejp.data.CityWeatherInfo
 import io.github.pablichj.exercisejp.data.OpenWeatherApiManager
 import io.github.pablichj.exercisejp.domain.GeocodeCityInput
 import io.github.pablichj.exercisejp.domain.GeocodeCityUseCase
@@ -27,9 +29,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SearchPageViewModel @Inject constructor(
-    val dispatcherProvider: DispatcherProvider,
-    val geocodeCityUseCase: GeocodeCityUseCase,
-    val getCityWeatherUseCase: GetCityWeatherUseCase
+    private val dispatcherProvider: DispatcherProvider,
+    private val geocodeCityUseCase: GeocodeCityUseCase,
+    private val getCityWeatherUseCase: GetCityWeatherUseCase
 ) : ViewModel() {
 
     private val _searchPageState = mutableStateOf(SearchPageState())
@@ -56,7 +58,7 @@ class SearchPageViewModel @Inject constructor(
         )
     }
 
-    private fun updatePermissionState(shouldAsk: Boolean) {
+    private fun updateShowPermissionState(shouldAsk: Boolean) {
         val currentPageState = _searchPageState.value
         _searchPageState.value = currentPageState.copy(
             shouldAskLocationPermission = shouldAsk
@@ -67,11 +69,11 @@ class SearchPageViewModel @Inject constructor(
 
     fun doCityGeocodeRequest(cityWeatherRequest: CityWeatherRequest) {
         viewModelScope.launch(dispatcherProvider.main) {
-            processNewGeocodeByCityRequest(cityWeatherRequest)
+            processGeocodeByCityRequest(cityWeatherRequest)
         }
     }
 
-    private suspend fun processNewGeocodeByCityRequest(
+    private suspend fun processGeocodeByCityRequest(
         cityWeatherRequest: CityWeatherRequest
     ) {
         updateWeatherSectionState(WeatherSectionState.Loading)
@@ -97,12 +99,20 @@ class SearchPageViewModel @Inject constructor(
                     return
                 }
 
-                processCityWeather(lat, lon, cityWeatherRequest.units)
+                val weatherInfo = processCityWeather(lat, lon, cityWeatherRequest.units)
+                if (weatherInfo == null) {
+                    updateWeatherSectionState(WeatherSectionState.SearchError("Error fetching weather"))
+                    return
+                }
+
+                updateWeatherSectionState(
+                    WeatherSectionState.SearchSuccess(weatherInfo)
+                )
             }
         }
     }
 
-    private suspend fun processCityWeather(lat: Double, lon: Double, units: Units) {
+    private suspend fun processCityWeather(lat: Double, lon: Double, units: Units): CityWeatherInfo? {
 
         val cityWeatherInput = GetCityWeatherInput(
             apiKey = OpenWeatherApiManager.API_KEY,
@@ -111,16 +121,13 @@ class SearchPageViewModel @Inject constructor(
             units = units.apiValue
         )
 
-        when (val cityWeatherOutput = getCityWeatherUseCase.execute(cityWeatherInput)) {
+        return when (val cityWeatherOutput = getCityWeatherUseCase.execute(cityWeatherInput)) {
             is UseCaseResult.Error -> {
-                updateWeatherSectionState(WeatherSectionState.SearchError(cityWeatherOutput.error))
-                return
+                return null
             }
 
             is UseCaseResult.Success -> {
-                updateWeatherSectionState(
-                    WeatherSectionState.SearchSuccess(cityWeatherOutput.value.cityWeather)
-                )
+                cityWeatherOutput.value.cityWeather
             }
         }
     }
@@ -132,7 +139,7 @@ class SearchPageViewModel @Inject constructor(
         ) == PackageManager.PERMISSION_GRANTED
 
         if (!granted) {
-            updatePermissionState(true)
+            updateShowPermissionState(true)
         } else {
             presentCurrentLocationWeather(context)
         }
@@ -144,28 +151,28 @@ class SearchPageViewModel @Inject constructor(
         }
     }
 
-    @SuppressLint("MissingPermission")
     private fun presentCurrentLocationWeather(context: Context) {
-        viewModelScope.launch(Dispatchers.Default) {
+        viewModelScope.launch(Dispatchers.Main) {
             updateWeatherSectionState(WeatherSectionState.Loading)
-            val result = try {
-                val locationClient = LocationServices.getFusedLocationProviderClient(context)
-                val task = locationClient.getCurrentLocation(
-                    Priority.PRIORITY_BALANCED_POWER_ACCURACY,
-                    CancellationTokenSource().token
-                )
-                task.await()
-            } catch (th: Throwable) {
-                null
-            }
-
-            if (result != null) {
-                Log.d("VM", "Pablo location: ${result.latitude}")
-                processCityWeather(
-                    result.latitude,
-                    result.longitude,
+            val location = getLocation(context)
+            if (location != null) {
+                val weatherInfo = processCityWeather(
+                    location.latitude,
+                    location.longitude,
                     searchPageState.value.searchFormState.units
                 )
+                if (weatherInfo == null) {
+                    updateWeatherSectionState(WeatherSectionState.SearchError("Error fetching weather"))
+                    return@launch
+                }
+
+                //updateWeatherSectionState(WeatherSectionState.SearchSuccess(weatherInfo))
+                //updateSearchFormState(SearchFormState(citySearched = weatherInfo.name ?: "-"))
+                _searchPageState.value = SearchPageState(
+                    searchFormState = SearchFormState(citySearched = weatherInfo.name ?: "-"),
+                    weatherSectionState = WeatherSectionState.SearchSuccess(weatherInfo)
+                )
+
             } else {
                 updateWeatherSectionState(
                     WeatherSectionState.SearchError(
@@ -176,8 +183,22 @@ class SearchPageViewModel @Inject constructor(
         }
     }
 
+    @SuppressLint("MissingPermission")
+    private suspend fun getLocation(context: Context): Location? {
+        return try {
+            val locationClient = LocationServices.getFusedLocationProviderClient(context)
+            val task = locationClient.getCurrentLocation(
+                Priority.PRIORITY_BALANCED_POWER_ACCURACY,
+                CancellationTokenSource().token
+            )
+            task.await()
+        } catch (th: Throwable) {
+            null
+        }
+    }
+
     fun clearShouldAskLocationPermission() {
-        updatePermissionState(false)
+        updateShowPermissionState(false)
     }
 
 }
