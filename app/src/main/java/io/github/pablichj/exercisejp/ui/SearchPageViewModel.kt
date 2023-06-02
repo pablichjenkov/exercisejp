@@ -2,6 +2,7 @@ package io.github.pablichj.exercisejp.ui
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.location.Location
 import android.util.Log
@@ -30,6 +31,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SearchPageViewModel @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
+    private val preferences: SharedPreferences,
     private val geocodeCityUseCase: GeocodeCityUseCase,
     private val getCityWeatherUseCase: GetCityWeatherUseCase
 ) : ViewModel() {
@@ -37,6 +39,18 @@ class SearchPageViewModel @Inject constructor(
     private val _searchPageState = mutableStateOf(SearchPageState())
     val searchPageState: State<SearchPageState>
         get() = _searchPageState
+
+    init {
+        val searchForm = ModelUtils.createSearchFormStateFromPreferences(preferences)
+        updateSearchFormState(searchForm)
+        val request = CityWeatherRequest(
+            city = searchForm.citySearched,
+            stateCode = searchForm.stateSearched,
+            countryCode = searchForm.countrySearched,
+            units = searchForm.units
+        )
+        doCityGeocodeRequest(request)
+    }
 
     fun start(context: Context, permission: String) {
         tryCurrentLocation(context, permission)
@@ -108,6 +122,7 @@ class SearchPageViewModel @Inject constructor(
                 updateWeatherSectionState(
                     WeatherSectionState.SearchSuccess(weatherInfo)
                 )
+                ModelUtils.saveSearchFormStateToPreferences(preferences, searchPageState.value.searchFormState)
             }
         }
     }
@@ -172,6 +187,7 @@ class SearchPageViewModel @Inject constructor(
                     searchFormState = SearchFormState(citySearched = weatherInfo.name ?: "-"),
                     weatherSectionState = WeatherSectionState.SearchSuccess(weatherInfo)
                 )
+                ModelUtils.saveSearchFormStateToPreferences(preferences, searchPageState.value.searchFormState)
 
             } else {
                 updateWeatherSectionState(
