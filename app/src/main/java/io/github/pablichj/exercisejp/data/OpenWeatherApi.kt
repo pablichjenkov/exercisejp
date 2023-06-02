@@ -1,5 +1,6 @@
 package io.github.pablichj.exercisejp.data
 
+import io.github.pablichj.exercisejp.domain.CityWeatherInfo
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Query
@@ -13,4 +14,12 @@ interface OpenWeatherApi {
         @Query("limit") limit: Int = 1
     ): Response<List<GeocodeEntry>>
 
+    //?lat={lat}&lon={lon}&appid={API key}
+    @GET("${OpenWeatherApiManager.BASE_URL}/data/2.5/weather")
+    suspend fun getWeatherV_2_5(
+        @Query("appid") apiKey: String,
+        @Query("lat") lat: String,
+        @Query("lon") lon: String,
+        @Query("units") units: String
+    ): Response<CityWeatherInfo>
 }

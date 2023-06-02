@@ -15,10 +15,14 @@ class GeocodeCityUseCase @Inject constructor(
                 cityStateCountryJoin = input.joinByComa()
             )
             if (httpResp.isSuccessful) {
-                val geocodeFirstEntry = httpResp.body()?.get(0)
+                val geocodeEntries = httpResp.body()
                     ?: return UseCaseResult.Error("Unexpected empty body")
 
-                UseCaseResult.Success(GeocodeCityOutput(geocodeFirstEntry))
+                if (geocodeEntries.isEmpty()) {
+                    return UseCaseResult.Error("No city found")
+                }
+
+                UseCaseResult.Success(GeocodeCityOutput(geocodeEntries[0]))
             } else {
                 UseCaseResult.Error(httpResp.errorBody()?.string() ?: "no error body info")
             }
@@ -33,7 +37,7 @@ data class GeocodeCityInput(
     val apiKey: String,
     val city: String,
     val stateCode: String,
-    val countryCode: String,
+    val countryCode: String
 ) {
     fun joinByComa(): String {
         return "$city,$stateCode,$countryCode"

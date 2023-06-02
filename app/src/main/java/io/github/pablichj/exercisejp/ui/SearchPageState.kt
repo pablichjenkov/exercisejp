@@ -1,13 +1,28 @@
 package io.github.pablichj.exercisejp.ui
 
-import io.github.pablichj.exercisejp.data.GeocodeEntry
+import io.github.pablichj.exercisejp.domain.CityWeatherInfo
 
-sealed class SearchPageState {
+data class SearchPageState(
+    var searchFormState: SearchFormState = SearchFormState(),
+    var weatherSectionState: WeatherSectionState = WeatherSectionState.Empty
+)
 
-    var lastCitySearched = ""
+data class SearchFormState(
+    var citySearched: String = "",
+    var stateSearched: String = "",
+    var countrySearched: String = "US",
+    var units: Units = Units.Fahrenheit
+)
 
-    object Idle: SearchPageState()
-    object Loading: SearchPageState()
-    class SearchSuccess(val geocodeEntry: GeocodeEntry): SearchPageState()
-    class SearchError(val error: String): SearchPageState()
+sealed class WeatherSectionState {
+    object Empty : WeatherSectionState()
+    object Loading : WeatherSectionState()
+    class SearchSuccess(val weatherInfo: CityWeatherInfo) : WeatherSectionState()
+    class SearchError(val error: String) : WeatherSectionState()
+}
+
+enum class Units(val apiValue: String, val readerValue: String) {
+    Fahrenheit("imperial", "F"),
+    Celsius("metric", "C"),
+    Kelvin("standard", "K")
 }
